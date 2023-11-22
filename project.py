@@ -13,12 +13,6 @@ def get_num_processes():
             print("Please enter a valid integer.")
 
 def generate_random_data(num_processes):
-    burst_durations = np.random.randint(1, 51, size=num_processes)
-    priorities = np.random.permutation(np.arange(1, num_processes + 1))
-    print(burst_durations, priorities)
-    return burst_durations, priorities
-
-def generate_random_data(num_processes):
     burst_durations = []
     priorities = np.random.permutation(np.arange(1, num_processes + 1)).tolist()
 
