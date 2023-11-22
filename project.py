@@ -20,14 +20,13 @@ def generate_random_data(num_processes):
 
 def generate_random_data(num_processes):
     burst_durations = []
-    priorities = []
-    
+    priorities = np.random.permutation(np.arange(1, num_processes + 1)).tolist()
+
     for i in range(1, num_processes + 1):
         burst = np.random.choice(range(1, 51))
-        priority = np.random.permutation(np.arange(1, num_processes + 1))[i-1]
+        priority = priorities[i-1]
         burst_durations.append(burst)
-        priorities.append(priority)
-
+        
     return burst_durations, priorities
 
 def generate_range_data(num_processes):
@@ -37,9 +36,15 @@ def generate_range_data(num_processes):
     burst_min = int(input("Enter the minimum burst duration: "))
     burst_max = int(input("Enter the maximum burst duration: "))
     
+    available_priorities = list(range(1, num_processes + 1))
+    
     for i in range(1, num_processes + 1):
         burst = np.random.choice(range(burst_min, burst_max + 1))
-        priority = np.random.permutation(np.arange(1, num_processes + 1))[i-1]
+        
+        # Ensure unique priorities
+        priority = np.random.choice(available_priorities)
+        available_priorities.remove(priority)
+        
         burst_durations.append(burst)
         priorities.append(priority)
 
@@ -68,7 +73,6 @@ def generate_bar_chart1(num_processes, burst_durations, priorities, ax):
     ax.bar(x_values, burst_durations, color=colors, label=[f'P{i}' for i in range(1, num_processes + 1)])
     ax.set_xlabel("Process")
     ax.set_ylabel("Burst Duration (ms)")
-    ax.set_title("2D Bar Graph with Burst Durations")
 
 def generate_bar_chart2(num_processes, burst_durations, priorities, ax):
     # Calculate the start and end times for each process    
@@ -120,7 +124,7 @@ def generate_bar_chart3(num_processes, burst_durations, priorities, ax):
 
 def main():
     num_processes = get_num_processes() 
-    option = int(input("Would you like Burst Durations to be:\n1. Randomly generated\n2. Range\n3. Manually\nEnter your choice (1/2/3): "))
+    option = int(input("Would you like Burst Durations and Priorities to be:\n1. Randomly generated\n2. Range\n3. Manually\nEnter your choice (1/2/3): "))
     if option == 1:
         burst_durations, priorities = generate_random_data(num_processes)
     elif option == 2:
@@ -153,10 +157,8 @@ def main():
     ax3 = fig.add_subplot(224)
     generate_bar_chart3(num_processes, burst_durations, priorities, ax3)
 
-
-
-    # Perfectly fit subplots inside the figure area
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
     # Show the entire figure
     plt.show()
