@@ -61,44 +61,44 @@ def generate_table(num_processes, burst_durations, priorities):
     for i in range(1, num_processes + 1):
         print("{:<10} {:<20} {:<10}".format(f"P{i}", burst_durations[i-1], priorities[i-1]))
 
-def generate_bar_chart1(num_processes, burst_durations, priorities, ax):
-    x_values = np.arange(1, num_processes + 1)
-    colors = plt.cm.viridis(np.linspace(0, 1, num_processes))
-    ax.bar(x_values, burst_durations, color=colors, label=[f'P{i}' for i in range(1, num_processes + 1)])
-    ax.set_xlabel("Process")
-    ax.set_ylabel("Burst Duration (ms)")
+def calculate_awt_with_priority(num_processes, burst_durations, priorities):
+    sorted_processes = sorted(zip(burst_durations, priorities), key=lambda x: x[1])
+    sorted_burst_durations, _ = zip(*sorted_processes)
 
-# def generate_bar_chart2(num_processes, burst_durations, priorities, ax):
-#     # Calculate the start and end times for each process    
-#     start_times = np.cumsum([0] + burst_durations[:-1]) 
-#     end_times = np.cumsum(burst_durations)
+    waiting_times = [0]
+    for i in range(1, num_processes):
+        waiting_time = waiting_times[i-1] + sorted_burst_durations[i-1]
+        waiting_times.append(waiting_time)
 
-#     colors = plt.cm.viridis(np.linspace(0, 1, num_processes))
+    awt = np.sum(waiting_times) / num_processes
+    return awt
 
 
-#     for i in range(num_processes):
-#         y_values = np.full_like(start_times, 0)
-#         ax.barh(y_values, width=end_times[i] - start_times[i], left=start_times[i], color=colors[i], label=f'P{i + 1}')
+def calculate_awt_without_priority(num_processes, burst_durations):
+    waiting_times = [0] * num_processes
+    for i in range(1, num_processes):
+        waiting_time = waiting_times[i-1] + sum(burst_durations[:i])
+        waiting_times.append(waiting_time)
 
-#     ax.set_xlabel("Time")
-#     ax.set_ylabel("Process")
-#     ax.set_yticks([1])  # Set y-ticks for a single bar
-#     ax.set_title("Total Burst Duration time for all processes")
+    awt = sum(waiting_times) / num_processes
+    return awt
 
-#     x_ticks = np.concatenate(([0], end_times))
-#     ax.set_xticks(x_ticks)
-#     ax.set_xticklabels(x_ticks)
+def generate_awt_text(ax, awt_with_priority, awt_without_priority):
+    ax.axis('off')
+    ax.text(0.5, 0.5, f"AwT (no priority) = {awt_without_priority:.2f}ms\nAwT (priority) = {awt_with_priority:.2f}ms",
+            va='center', ha='center', fontsize=14)
+    
+def generate_color_map(num_processes):
+    return plt.cm.viridis(np.linspace(0, 1, num_processes))
 
-def generate_bar_chart2(num_processes, burst_durations, priorities, ax):
-    colors = plt.cm.viridis(np.linspace(0, 1, num_processes))
-
+def generate_bar_chart1(num_processes, burst_durations, priorities, ax, colors):
     for i in range(num_processes):
-        ax.barh(i, burst_durations[i], color=colors[i], label=f'P{i + 1}', left=np.sum(burst_durations[:i]))
+        ax.barh(1, burst_durations[i], color=colors[i], label=f'P{i + 1}', left=np.sum(burst_durations[:i]))
 
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Process")
-    ax.set_yticks(range(num_processes))
-    ax.set_yticklabels([f'P{i + 1}' for i in range(num_processes)])
+    ax.set_yticks([1])  
+    # ax.set_yticklabels(["Processes"])
     ax.set_title("Gantt Chart with Burst Durations")
     ax.legend()
 
@@ -106,31 +106,24 @@ def generate_bar_chart2(num_processes, burst_durations, priorities, ax):
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(x_ticks)
 
-def generate_bar_chart3(num_processes, burst_durations, priorities, ax):
-    colors = plt.cm.viridis(np.linspace(0, 1, num_processes))
-    sorted_indices = np.argsort(burst_durations)[::-1]
-    sorted_burst_durations = np.array(burst_durations)[sorted_indices]
-    sorted_colors = np.array(colors)[sorted_indices]
-    bottom = np.zeros(num_processes)
-
-    cumulative_burst_durations = np.zeros(num_processes)
+def generate_bar_chart2(num_processes, burst_durations, priorities, ax, colors):
+    sorted_processes = sorted(zip(range(num_processes), burst_durations, priorities), key=lambda x: x[2])
+    sorted_processes_indices, sorted_burst_durations, sorted_priorities = zip(*sorted_processes)
 
     for i in range(num_processes):
-        ax.barh(1, sorted_burst_durations[i], left=bottom[i], color=sorted_colors[i], label=f'P{sorted_indices[i] + 1}')
-        bottom[i] += sorted_burst_durations[i]
-        cumulative_burst_durations[i] = np.sum(sorted_burst_durations[:i+1])
+        ax.barh(1, sorted_burst_durations[i], color=colors[sorted_processes_indices[i]],
+                label=f'P{sorted_processes_indices[i] + 1}', left=np.sum(sorted_burst_durations[:i]))
 
-    ax.set_xlabel("Burst Duration (ms)")
+    ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Process")
     ax.set_yticks([1])
-    ax.set_title("Sorted Stacked Bar Chart with Burst Durations")
+    # ax.set_yticklabels(["Processes"])
+    ax.set_title("Gantt Chart with Burst Durations (Sorted by Priority)")
     ax.legend()
 
-    x_ticks = np.concatenate(([0], burst_durations))
+    x_ticks = np.concatenate(([0], np.cumsum(sorted_burst_durations)))
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(x_ticks)
-
-
 
 def main():
     num_processes = get_num_processes() 
@@ -145,10 +138,17 @@ def main():
         print("Invalid choice. Exiting.")
         return
 
-    # Generate the figure and set its size
+    # Calculate AwT with and without priority
+    awt_with_priority = calculate_awt_with_priority(num_processes, burst_durations, priorities)
+    awt_without_priority = calculate_awt_without_priority(num_processes, burst_durations)
+
+    # Generate colors for processes
+    colors = generate_color_map(num_processes)
+
+    # Generate the figure and set its size 
     fig = plt.figure(figsize=(20, 20))
 
-    # Generate table at subplot position (2, 2)
+    # Generate table at subplot position (1, 1)
     ax4 = fig.add_subplot(221, frame_on=False) # no visible frame 
     ax4.xaxis.set_visible(False) # hide the x axis
     ax4.yaxis.set_visible(False) # hide the y axis
@@ -159,19 +159,20 @@ def main():
     table.auto_set_font_size(False)
     table.set_fontsize(12)
     table.scale(1, 3.5)
+
     # Create a grid of 2x2 subplots and generate each of bar chart in those
     ax1 = fig.add_subplot(222)
-    generate_bar_chart1(num_processes, burst_durations, priorities, ax1) 
+    generate_awt_text(ax1, awt_with_priority, awt_without_priority)
     ax2 = fig.add_subplot(223)
-    generate_bar_chart2(num_processes, burst_durations, priorities, ax2)
+    generate_bar_chart1(num_processes, burst_durations, priorities, ax2, colors)
     ax3 = fig.add_subplot(224)
-    generate_bar_chart3(num_processes, burst_durations, priorities, ax3)
+    generate_bar_chart2(num_processes, burst_durations, priorities, ax3, colors)
 
     plt.tight_layout()
     plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
     # Show the entire figure
     plt.show()
-
+    
 if __name__ == "__main__":
     main()
