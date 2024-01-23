@@ -34,8 +34,6 @@ def generate_range_data(num_processes):
     
     for i in range(1, num_processes + 1):
         burst = np.random.choice(range(burst_min, burst_max + 1))
-        
-        # Ensure unique priorities
         priority = np.random.choice(available_priorities)
         available_priorities.remove(priority)
         
@@ -97,8 +95,7 @@ def generate_bar_chart1(num_processes, burst_durations, priorities, ax, colors):
 
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Process")
-    ax.set_yticks([1])  
-    # ax.set_yticklabels(["Processes"])
+    ax.set_yticks([1])
     ax.set_title("Gantt Chart with Burst Durations")
     ax.legend()
 
@@ -117,7 +114,6 @@ def generate_bar_chart2(num_processes, burst_durations, priorities, ax, colors):
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Process")
     ax.set_yticks([1])
-    # ax.set_yticklabels(["Processes"])
     ax.set_title("Gantt Chart with Burst Durations (Sorted by Priority)")
     ax.legend()
 
@@ -138,20 +134,16 @@ def main():
         print("Invalid choice. Exiting.")
         return
 
-    # Calculate AwT with and without priority
     awt_with_priority = calculate_awt_with_priority(num_processes, burst_durations, priorities)
     awt_without_priority = calculate_awt_without_priority(num_processes, burst_durations)
 
-    # Generate colors for processes
     colors = generate_color_map(num_processes)
 
-    # Generate the figure and set its size 
     fig = plt.figure(figsize=(20, 20))
 
-    # Generate table at subplot position (1, 1)
-    ax4 = fig.add_subplot(221, frame_on=False) # no visible frame 
-    ax4.xaxis.set_visible(False) # hide the x axis
-    ax4.yaxis.set_visible(False) # hide the y axis
+    ax4 = fig.add_subplot(221, frame_on=False)
+    ax4.xaxis.set_visible(False)
+    ax4.yaxis.set_visible(False)
 
     table_data = [("Process", "Burst Duration (ms)", "Priority")] + \
                 [(f"P{i}", burst_durations[i-1], priorities[i-1]) for i in range(1, num_processes + 1)]
@@ -160,7 +152,6 @@ def main():
     table.set_fontsize(12)
     table.scale(1, 3.5)
 
-    # Create a grid of 2x2 subplots and generate each of bar chart in those
     ax1 = fig.add_subplot(222)
     generate_awt_text(ax1, awt_with_priority, awt_without_priority)
     ax2 = fig.add_subplot(223)
@@ -171,7 +162,6 @@ def main():
     plt.tight_layout()
     plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
-    # Show the entire figure
     plt.show()
     
 if __name__ == "__main__":
