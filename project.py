@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def get_num_processes():
+    '''
+    Gets the number of processes to be analyzed.
+    '''
     while True:
         try:
             num_processes = int(input("Enter how many processes you would like to analyze: "))
@@ -13,6 +16,9 @@ def get_num_processes():
             print("Please enter a valid integer.")
 
 def generate_random_data(num_processes):
+    '''
+    Generates random burst durations and priorities for the given number of processes.
+    '''
     burst_durations = []
     priorities = np.random.permutation(np.arange(1, num_processes + 1)).tolist()
 
@@ -24,6 +30,9 @@ def generate_random_data(num_processes):
     return burst_durations, priorities
 
 def generate_range_data(num_processes):
+    '''
+    Generates burst durations (within the range) and priorities for the given number of processes.
+    '''
     burst_durations = []
     priorities = []
     
@@ -43,6 +52,9 @@ def generate_range_data(num_processes):
     return burst_durations, priorities
 
 def manual_input_data(num_processes):
+    '''
+    Manual input of burst durations and priorities for the given number of processes.
+    '''
     burst_durations = []
     priorities = []
     for i in range(1, num_processes + 1):
@@ -55,11 +67,17 @@ def manual_input_data(num_processes):
     return burst_durations, priorities
 
 def generate_table(num_processes, burst_durations, priorities):
+    '''
+    Generates a table of the burst durations and priorities for the given number of processes.
+    '''
     print("{:<10} {:<20} {:<10}".format("Process", "Burst Duration (ms)", "Priority"))
     for i in range(1, num_processes + 1):
         print("{:<10} {:<20} {:<10}".format(f"P{i}", burst_durations[i-1], priorities[i-1]))
 
 def calculate_awt_with_priority(num_processes, burst_durations, priorities):
+    '''
+    Calculates the average waiting time for the given number of processes taking priority into account.
+    '''
     sorted_processes = sorted(zip(burst_durations, priorities), key=lambda x: x[1])
     sorted_burst_durations, _ = zip(*sorted_processes)
 
@@ -73,6 +91,9 @@ def calculate_awt_with_priority(num_processes, burst_durations, priorities):
 
 
 def calculate_awt_without_priority(num_processes, burst_durations):
+    '''
+    Calculates the average waiting time for the given number of processes without taking priority into account.
+    '''
     waiting_times = [0] * num_processes
     for i in range(1, num_processes):
         waiting_time = waiting_times[i-1] + sum(burst_durations[:i])
@@ -82,14 +103,23 @@ def calculate_awt_without_priority(num_processes, burst_durations):
     return awt
 
 def generate_awt_text(ax, awt_with_priority, awt_without_priority):
+    '''
+    Generates the text for the average waiting time.
+    '''
     ax.axis('off')
     ax.text(0.5, 0.5, f"AwT (no priority) = {awt_without_priority:.2f}ms\nAwT (priority) = {awt_with_priority:.2f}ms",
             va='center', ha='center', fontsize=14)
     
 def generate_color_map(num_processes):
+    '''
+    Generates a color map for the given number of processes so colors are the same on both graphs.
+    '''
     return plt.cm.viridis(np.linspace(0, 1, num_processes))
 
 def generate_bar_chart1(num_processes, burst_durations, priorities, ax, colors):
+    '''
+    Generates the Gantt chart for the given number of processes without priorities.
+    '''
     for i in range(num_processes):
         ax.barh(1, burst_durations[i], color=colors[i], label=f'P{i + 1}', left=np.sum(burst_durations[:i]))
 
@@ -104,6 +134,9 @@ def generate_bar_chart1(num_processes, burst_durations, priorities, ax, colors):
     ax.set_xticklabels(x_ticks)
 
 def generate_bar_chart2(num_processes, burst_durations, priorities, ax, colors):
+    '''
+    Generates the Gantt chart for the given number of processes with priorities.
+    '''
     sorted_processes = sorted(zip(range(num_processes), burst_durations, priorities), key=lambda x: x[2])
     sorted_processes_indices, sorted_burst_durations, sorted_priorities = zip(*sorted_processes)
 
@@ -134,9 +167,11 @@ def main():
         print("Invalid choice. Exiting.")
         return
 
+    # Calculate average waiting time
     awt_with_priority = calculate_awt_with_priority(num_processes, burst_durations, priorities)
     awt_without_priority = calculate_awt_without_priority(num_processes, burst_durations)
 
+    # Generate colormap so colors are the same on both graphs
     colors = generate_color_map(num_processes)
 
     fig = plt.figure(figsize=(20, 20))
